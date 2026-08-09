@@ -4,7 +4,7 @@
 Hackathon build. An AI voice agent ("CallDesk") that calls hotels on behalf of a travel advisor to negotiate rates, confirm amenities, or request upgrades, then logs structured notes back. Idea deliberately triple-dips: ElevenLabs prize (voice call), Anecdote prize (structured call notes), and the AI trip-planning track. With only 3.5 hours, scope is one tight end-to-end demo path — cut anything not visible in the 90-second demo.
 
 ## Avatar
-**Maria, independent travel advisor.** Manages multiple client bookings, regularly has to call hotels to negotiate rates/upgrades/amenities, hates being on hold, and has no time to type up call notes afterward for her client file.
+**independent travel advisor.** Manages multiple client bookings, regularly has to call hotels to negotiate rates/upgrades/amenities, hates being on hold, and has no time to type up call notes afterward for her client file.
 
 ## Feature List (priority order, wow-factor first)
 
@@ -107,15 +107,21 @@ Full state for a single call — brief, current transcript so far, and notes onc
   "transcript": [
     { "speaker": "agent | hotel", "text": "string", "timestamp": "ISO 8601 string" }
   ],
+  "research": [
+    { "fact": "string", "source": "string" }
+  ],
   "notes": {
     "outcome": "success | partial | declined",
     "summary": "string",
     "negotiatedTerms": "string",
-    "keyQuotes": ["string"]
+    "keyQuotes": ["string"],
+    "discrepancies": [
+      { "topic": "string", "claimed": "string", "confirmed": "string" }
+    ]
   }
 }
 ```
-`notes` is `null` until the call reaches `completed`.
+`notes` is `null` until the call reaches `completed`. `research` and `discrepancies` are **always present, possibly empty arrays** — pre-call web research (e.g. hotel amenities/rate found online) and any contradictions surfaced between what was claimed online vs. confirmed on the call (e.g. "breakfast included" claimed on the website, but the front desk says it costs extra). Render their sections only when non-empty; an empty array is a normal, expected state, not a loading/error state.
 
 ### `GET /api/calls/:callId/stream`
 Server-Sent Events (SSE) endpoint. Frontend subscribes here right after `POST /api/calls` resolves, to render the live transcript without polling.
@@ -123,7 +129,7 @@ Server-Sent Events (SSE) endpoint. Frontend subscribes here right after `POST /a
 **Event types**
 - `status` — `{ "status": "in_progress" | "completed" | "failed" }`
 - `transcript` — `{ "speaker": "agent | hotel", "text": "string", "timestamp": "ISO 8601 string" }` (one event per new line of dialogue)
-- `notes` — final structured notes payload (same shape as `notes` above), sent once, right before the stream closes
+- `notes` — final structured notes payload (same shape as `notes` above, including `discrepancies`), sent once, right before the stream closes
 - `done` — signals the stream is finished; frontend should close the `EventSource`
 
 ### `DELETE /api/calls/:callId` *(stretch, optional)*

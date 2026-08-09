@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { OutcomePill } from "@/components/pills";
-import type { Notes, TranscriptLine } from "@/lib/types";
+import type { CallNotes, TranscriptTurn } from "@/lib/types";
 
 export default function NotesCard({
   notes,
   hotelName,
   transcript,
 }: {
-  notes: Notes;
+  notes: CallNotes;
   hotelName: string;
-  transcript: TranscriptLine[];
+  transcript: TranscriptTurn[];
 }) {
   const [copied, setCopied] = useState(false);
 

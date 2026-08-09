@@ -4,26 +4,25 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StatusPill } from "@/components/pills";
 import {
-  API_BASE,
   LANGUAGES,
   OBJECTIVES,
   type Call,
   type CallStatus,
-  type Notes,
-  type TranscriptLine,
+  type CallNotes,
+  type TranscriptTurn,
 } from "@/lib/types";
 import NotesCard from "./notes-card";
 
 export default function LiveCall({ callId }: { callId: string }) {
   const [call, setCall] = useState<Call | null>(null);
   const [status, setStatus] = useState<CallStatus>("queued");
-  const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
-  const [notes, setNotes] = useState<Notes | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
+  const [notes, setNotes] = useState<CallNotes | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
   // Initial state: brief, research, and anything that streamed before we subscribed.
   useEffect(() => {
-    fetch(`${API_BASE}/calls/${callId}`)
+    fetch(`/api/calls/${callId}`)
       .then((r) => r.json())
       .then((data: Call) => {
         setCall(data);
@@ -35,14 +34,14 @@ export default function LiveCall({ callId }: { callId: string }) {
   }, [callId]);
 
   useEffect(() => {
-    const es = new EventSource(`${API_BASE}/calls/${callId}/stream`);
+    const es = new EventSource(`/api/calls/${callId}/stream`);
 
     es.addEventListener("status", (e) => {
       setStatus(JSON.parse((e as MessageEvent).data).status);
     });
 
     es.addEventListener("transcript", (e) => {
-      setTranscript((t) => [...t, JSON.parse((e as MessageEvent).data) as TranscriptLine]);
+      setTranscript((t) => [...t, JSON.parse((e as MessageEvent).data) as TranscriptTurn]);
     });
 
     es.addEventListener("notes", (e) => {

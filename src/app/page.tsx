@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StatusPill, OutcomePill } from "@/components/pills";
-import { API_BASE, OBJECTIVES, type CallSummary } from "@/lib/types";
+import { OBJECTIVES, type CallSummary } from "@/lib/types";
 
 export default function Dashboard() {
   const [calls, setCalls] = useState<CallSummary[] | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/calls`)
+    fetch(`/api/calls`)
       .then((r) => r.json())
       .then((d) => setCalls(d.calls ?? []))
       .catch(() => setCalls([]));

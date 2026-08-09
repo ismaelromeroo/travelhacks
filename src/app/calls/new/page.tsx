@@ -3,12 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  API_BASE,
-  OBJECTIVES,
-  SPOKEN_LANGUAGES,
-  type Objective,
-} from "@/lib/types";
+import { AGENT_LOOKUP, OBJECTIVES, SPOKEN_LANGUAGES, type Objective } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-[10px] border border-border-input bg-white/70 px-3.5 py-2.5 text-[15px] outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(27,110,243,0.14)]";
@@ -16,7 +11,7 @@ const labelClass = "text-[13px] font-semibold text-ink-2";
 const sectionClass = "glass flex flex-col gap-[18px] rounded-[14px] p-6";
 const stepClass = "font-mono text-[11px] tracking-[0.06em] text-faint";
 
-/** Type it, or hand it to the agent. Auto submits an empty string — contract unchanged. */
+/** Type it, or hand it to the agent — auto submits AGENT_LOOKUP text, not a blank. */
 function AutoField({
   id,
   label,
@@ -94,14 +89,14 @@ export default function NewCall() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/calls`, {
+      const res = await fetch(`/api/calls`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hotelName,
-          hotelPhone: autoPhone ? "" : hotelPhone,
+          hotelPhone: autoPhone ? AGENT_LOOKUP.phone : hotelPhone,
           guestName,
-          bookingRef: autoRef ? "" : bookingRef,
+          bookingRef: autoRef ? AGENT_LOOKUP.bookingRef : bookingRef,
           // Typed objective is what the advisor means; the chip keeps the enum the backend expects.
           objective,
           context: [objectiveText && `Objective: ${objectiveText}`, context]

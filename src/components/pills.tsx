@@ -1,4 +1,4 @@
-import type { CallStatus, Outcome } from "@/lib/types";
+import type { CallStatus, CallOutcome } from "@/lib/types";
 
 const pill = "rounded-full px-[11px] py-[5px] text-xs font-semibold";
 
@@ -9,7 +9,7 @@ const STATUS: Record<CallStatus, string> = {
   failed: "bg-danger-tint text-danger",
 };
 
-const OUTCOME: Record<Outcome, string> = {
+const OUTCOME: Record<CallOutcome, string> = {
   success: "bg-success-tint text-success-ink",
   partial: "bg-warn-tint text-warn",
   declined: "bg-danger-tint text-danger",
@@ -19,6 +19,6 @@ export function StatusPill({ status }: { status: CallStatus }) {
   return <span className={`${pill} ${STATUS[status]}`}>{status}</span>;
 }
 
-export function OutcomePill({ outcome }: { outcome: Outcome }) {
+export function OutcomePill({ outcome }: { outcome: CallOutcome }) {
   return <span className={`${pill} ${OUTCOME[outcome]}`}>{outcome}</span>;
 }
