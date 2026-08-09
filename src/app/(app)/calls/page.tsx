@@ -17,7 +17,13 @@ export default function Dashboard() {
 
   return (
     <main className="flex flex-col gap-10 pt-10">
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-line pb-10">
+      <div className="ambient" aria-hidden>
+        <span className="blob-sky" />
+        <span className="blob-blush" />
+        <span className="blob-mist" />
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b border-white/70 pb-10">
         <div className="flex flex-col gap-3">
           <h1 className="max-w-[18ch] text-[44px] font-semibold leading-[1.05] tracking-[-0.035em]">
             Calls placed on your behalf.
@@ -41,10 +47,10 @@ export default function Dashboard() {
         {calls === null && <div className="text-sm text-faint">Loading…</div>}
 
         {calls?.length === 0 && (
-          <div className="flex flex-col items-center gap-4 rounded-[14px] border border-dashed border-line px-6 py-20 text-center">
+          <div className="glass flex flex-col items-center gap-4 rounded-[14px] px-6 py-20 text-center">
             <div className="text-[17px] font-semibold">No calls yet</div>
             <p className="max-w-[42ch] text-sm leading-[1.55] text-muted">
-              Start with a brief — hotel, guest, and what you want out of the call. The transcript
+              Start with a brief: hotel, guest, and what you want out of the call. The transcript
               streams in live.
             </p>
             <Link
@@ -62,7 +68,7 @@ export default function Dashboard() {
               <Link
                 key={c.callId}
                 href={`/calls/${c.callId}`}
-                className="flex flex-col gap-3.5 rounded-[12px] border border-line p-[18px] transition-shadow hover:shadow-raised"
+                className="glass flex flex-col gap-3.5 rounded-[12px] p-[18px] transition-shadow hover:shadow-overlay"
               >
                 <div className="flex items-center justify-between gap-2">
                   <StatusPill status={c.status} />

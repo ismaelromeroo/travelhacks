@@ -281,6 +281,9 @@ body {
 }
 .wave-bar { animation: wave 0.9s ease-in-out infinite; height: 4px; }
 
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* A field the voice agent just filled */
 @keyframes just-filled {
   0% { border-color: var(--color-accent); box-shadow: 0 0 0 4px rgba(27, 110, 243, 0.18); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const SCRIPT = [
   { speaker: "agent", text: "Hi, I'm calling on behalf of a travel advisor about an upcoming stay. Is there any flexibility on the nightly price?" },
@@ -22,6 +22,7 @@ const clock = (turns: number) => {
 /** Looping visual twin of the live call page. No API, no SSE. */
 export default function LandingCallStage() {
   const [step, setStep] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tick = setInterval(
@@ -30,6 +31,11 @@ export default function LandingCallStage() {
     );
     return () => clearInterval(tick);
   }, []);
+
+  // Follow the newest bubble. Scrolls the panel only, never the page.
+  useEffect(() => {
+    box.current?.scrollTo({ top: box.current.scrollHeight, behavior: "smooth" });
+  }, [step]);
 
   const turns = Math.min(step, SCRIPT.length);
   const done = step > SCRIPT.length;
@@ -61,14 +67,17 @@ export default function LandingCallStage() {
         <span className="font-mono text-[11px] text-faint">{clock(turns)}</span>
       </div>
 
-      <div className="transcript-surface flex h-[340px] flex-col gap-3 overflow-hidden px-5 py-5 sm:h-[300px]">
+      <div
+        ref={box}
+        className="transcript-surface no-scrollbar flex h-[340px] flex-col gap-3 overflow-y-auto px-5 py-5 sm:h-[360px]"
+      >
         {visible.map((line, i) => {
           const isAgent = line.speaker === "agent";
           const speaking = !done && i === visible.length - 1;
           return (
             <div
               key={i}
-              className={`bubble-in flex flex-col gap-1.5 ${isAgent ? "items-end" : "items-start"}`}
+              className={`bubble-in flex shrink-0 flex-col gap-1.5 ${isAgent ? "items-end" : "items-start"}`}
             >
               <div className="flex items-center gap-2 px-1.5">
                 <span className="font-mono text-[10.5px] tracking-[0.04em] text-faint">
@@ -98,7 +107,7 @@ export default function LandingCallStage() {
         })}
 
         {done && (
-          <div className="bubble-in mt-auto flex items-center gap-3 rounded-[12px] border border-white/70 bg-white/80 px-4 py-3">
+          <div className="bubble-in flex shrink-0 items-center gap-3 rounded-[12px] border border-white/70 bg-white/80 px-4 py-3">
             <span className="rounded-full bg-success-tint px-2.5 py-1 text-[11px] font-semibold text-success-ink">
               success
             </span>
