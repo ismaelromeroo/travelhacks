@@ -1,4 +1,9 @@
-import type { CallProvider, ConversationState, Speaker } from "../types";
+import type {
+  CallProvider,
+  ConversationState,
+  ProviderTranscriptTurn,
+  Speaker,
+} from "../types";
 
 const BASE_URL = "https://api.vapi.ai";
 
@@ -76,11 +81,32 @@ interface VapiMessage {
 interface GetCallResponse {
   status: VapiCallStatus;
   endedReason?: string;
-  artifact?: { messages?: VapiMessage[] };
+  artifact?: { messages?: VapiMessage[]; transcript?: string };
 }
 
+/** Vapi labels the assistant "bot" in call artifacts and "assistant" in some payloads. */
+const AGENT_ROLES = new Set(["assistant", "bot"]);
+const SPOKEN_ROLES = new Set(["assistant", "bot", "user"]);
+
 function mapRole(role: VapiMessage["role"]): Speaker {
-  return role === "assistant" || role === "bot" ? "agent" : "hotel";
+  return AGENT_ROLES.has(role) ? "agent" : "hotel";
+}
+
+/**
+ * Fallback for when `artifact.messages` lags behind: the flat transcript string
+ * Vapi writes as "AI: …\nUser: …".
+ */
+function parseTranscriptText(text: string): ProviderTranscriptTurn[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      const match = /^(AI|Assistant|Bot|User|Human|Customer)\s*:\s*(.+)$/i.exec(line);
+      if (!match) return [];
+      const speaker: Speaker = /^(ai|assistant|bot)$/i.test(match[1]) ? "agent" : "hotel";
+      return [{ speaker, text: match[2] }];
+    });
 }
 
 /** Vapi has no "failed" status of its own — failure is inferred from endedReason once the call ends. */
@@ -94,14 +120,14 @@ function mapStatus(data: GetCallResponse): ConversationState["status"] {
 export const getConversation: CallProvider["getConversation"] = async (conversationId) => {
   const res = await vapiFetch(`/call/${conversationId}`);
   const data = (await res.json()) as GetCallResponse;
-  const messages = data.artifact?.messages ?? [];
+
+  const turns: ProviderTranscriptTurn[] = (data.artifact?.messages ?? [])
+    .filter((m) => SPOKEN_ROLES.has(m.role) && Boolean(m.message?.trim()))
+    .map((m) => ({ speaker: mapRole(m.role), text: (m.message as string).trim() }));
+
+  const text = data.artifact?.transcript;
   return {
     status: mapStatus(data),
-    transcript: messages
-      .filter((m) => (m.role === "assistant" || m.role === "user") && Boolean(m.message))
-      .map((m) => ({
-        speaker: mapRole(m.role),
-        text: m.message as string,
-      })),
+    transcript: turns.length ? turns : text ? parseTranscriptText(text) : [],
   };
 };

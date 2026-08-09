@@ -18,40 +18,52 @@ export default function LiveCall({ callId }: { callId: string }) {
   const [status, setStatus] = useState<CallStatus>("queued");
   const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
   const [notes, setNotes] = useState<CallNotes | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
 
-  // Initial state: brief, research, and anything that streamed before we subscribed.
+  // GET the call first; subscribe to SSE only while it is still live. The
+  // stream replays the full transcript, so SSE is the single source for it.
   useEffect(() => {
+    let es: EventSource | null = null;
+    let cancelled = false;
+
     fetch(`/api/calls/${callId}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
       .then((data: Call) => {
+        if (cancelled) return;
         setCall(data);
         setStatus(data.status);
-        setTranscript(data.transcript ?? []);
         setNotes(data.notes ?? null);
+
+        if (data.status === "completed" || data.status === "failed") {
+          setTranscript(data.transcript ?? []);
+          return;
+        }
+
+        es = new EventSource(`/api/calls/${callId}/stream`);
+        es.addEventListener("status", (e) => {
+          setStatus(JSON.parse((e as MessageEvent).data).status);
+        });
+        es.addEventListener("transcript", (e) => {
+          setTranscript((t) => [...t, JSON.parse((e as MessageEvent).data) as TranscriptTurn]);
+        });
+        es.addEventListener("notes", (e) => {
+          setNotes(JSON.parse((e as MessageEvent).data));
+        });
+        // ponytail: no reconnect logic on error — the browser retries EventSource itself.
+        es.addEventListener("done", () => es?.close());
       })
-      .catch(() => {});
-  }, [callId]);
+      .catch(() => {
+        if (!cancelled) setNotFound(true);
+      });
 
-  useEffect(() => {
-    const es = new EventSource(`/api/calls/${callId}/stream`);
-
-    es.addEventListener("status", (e) => {
-      setStatus(JSON.parse((e as MessageEvent).data).status);
-    });
-
-    es.addEventListener("transcript", (e) => {
-      setTranscript((t) => [...t, JSON.parse((e as MessageEvent).data) as TranscriptTurn]);
-    });
-
-    es.addEventListener("notes", (e) => {
-      setNotes(JSON.parse((e as MessageEvent).data));
-    });
-
-    // ponytail: no reconnect logic on error — the browser retries EventSource itself.
-    es.addEventListener("done", () => es.close());
-
-    return () => es.close();
+    return () => {
+      cancelled = true;
+      es?.close();
+    };
   }, [callId]);
 
   useEffect(() => {
@@ -61,6 +73,23 @@ export default function LiveCall({ callId }: { callId: string }) {
   const live = status === "in_progress";
   const brief = call?.brief;
   const research = call?.research ?? [];
+
+  if (notFound) {
+    return (
+      <main className="flex flex-col items-center gap-4 pt-24 text-center">
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Call not found</h1>
+        <p className="max-w-[42ch] text-sm leading-[1.55] text-muted">
+          This call is no longer in memory. It may have been placed before the server restarted.
+        </p>
+        <Link
+          href="/calls"
+          className="rounded-full border border-border-input px-5 py-2.5 text-[15px] font-semibold transition-colors hover:border-ink"
+        >
+          Back to calls
+        </Link>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-col gap-8 pt-6">

@@ -16,6 +16,8 @@ import VoiceBrief from "@/components/voice-brief";
 const inputClass =
   "w-full rounded-[10px] border border-border-input bg-white/70 px-3.5 py-2.5 text-[15px] outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(27,110,243,0.14)]";
 const labelClass = "text-[13px] font-semibold text-ink-2";
+/** What Vapi accepts: country code first, digits only. */
+const E164 = /^\+[1-9]\d{7,14}$/;
 const sectionClass = "glass flex flex-col gap-[18px] rounded-[14px] p-6";
 const stepClass = "font-mono text-[11px] tracking-[0.06em] text-faint";
 
@@ -89,6 +91,8 @@ export default function NewCall() {
   const [objective, setObjective] = useState<Objective>("negotiate_rate");
   const [context, setContext] = useState("");
   const [langId, setLangId] = useState("en");
+  // Scripted = mock provider (fixture transcript, no phone call). Off = real Vapi call.
+  const [scripted, setScripted] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,8 +123,25 @@ export default function NewCall() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
+
+    // A live call is dialled for real, so it needs a number the carrier accepts.
+    if (!scripted) {
+      if (autoPhone) {
+        setError(
+          "A live call needs a real number. Turn off \"let the agent find it\" on the phone field, or switch back to Scripted demo.",
+        );
+        return;
+      }
+      if (!E164.test(hotelPhone.replace(/[\s().-]/g, ""))) {
+        setError(
+          "That number will not dial. Live calls need the international format, country code first, like +33142000000.",
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
     try {
       const res = await fetch(`/api/calls`, {
         method: "POST",
@@ -136,11 +157,15 @@ export default function NewCall() {
             .filter(Boolean)
             .join("\n\n"),
           language: lang.wire,
+          mode: scripted ? "mock" : "live",
         }),
       });
-      if (!res.ok) throw new Error(`Server said ${res.status}`);
-      const { callId } = await res.json();
-      router.push(`/calls/${callId}`);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        // The route replies { error }. Show that, not just the status code.
+        throw new Error(data?.error ?? `The call could not be placed (${res.status}).`);
+      }
+      router.push(`/calls/${data.callId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not place the call");
       setSubmitting(false);
@@ -314,11 +339,31 @@ export default function NewCall() {
             </div>
           </section>
 
-          {error && <div className="text-[13px] text-danger">{error}</div>}
+          {error && (
+            <div className="flex items-start gap-3 rounded-[12px] border border-danger/30 bg-danger-tint px-4 py-3 text-[13px] leading-[1.5] text-danger">
+              <span className="pt-px">!</span>
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="fixed inset-x-0 bottom-0 z-10 px-6 pb-6">
-            <div className="glass-bar mx-auto flex max-w-[640px] items-center justify-between gap-4 rounded-full py-2.5 pr-2.5 pl-5">
-              <div className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
+            <div className="glass-bar mx-auto flex max-w-[640px] items-center justify-between gap-3 rounded-full py-2.5 pr-2.5 pl-2.5">
+              <button
+                type="button"
+                onClick={() => setScripted((v) => !v)}
+                title="Scripted plays a fixture transcript with no phone call. Live dials the hotel for real."
+                className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] font-semibold transition-colors ${
+                  scripted
+                    ? "border-warn/40 bg-warn-tint text-warn"
+                    : "border-success/40 bg-success-tint text-success-ink"
+                }`}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${scripted ? "bg-warn" : "bg-success live-dot"}`}
+                />
+                {scripted ? "Scripted demo" : "Live phone call"}
+              </button>
+              <div className="hidden min-w-0 items-center gap-2 text-[13px] text-muted sm:flex">
                 <span
                   className="size-1.5 shrink-0 rounded-full"
                   style={{ background: lang.hue }}

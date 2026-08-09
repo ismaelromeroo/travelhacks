@@ -39,6 +39,9 @@ export interface CallNotes {
   discrepancies: Discrepancy[];
 }
 
+/** Per-call provider override; absent means the CALL_MODE env default. */
+export type CallMode = "mock" | "live";
+
 export interface Call {
   callId: string;
   status: CallStatus;
@@ -48,6 +51,7 @@ export interface Call {
   research: ResearchFact[];
   createdAt: string;
   conversationId?: string;
+  mode?: CallMode;
 }
 
 export interface CallSummary {

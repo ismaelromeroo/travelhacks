@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { gatherResearch } from "@/lib/research";
 import { callStore } from "@/lib/store";
-import type { Call, CallBrief, CallSummary, Language, Objective } from "@/lib/types";
+import type { Call, CallBrief, CallMode, CallSummary, Language, Objective } from "@/lib/types";
 
 const OBJECTIVES = new Set<Objective>(["negotiate_rate", "confirm_amenity", "request_upgrade"]);
 const LANGUAGES = new Set<Language>(["en", "es"]);
@@ -40,8 +40,12 @@ function validateBrief(body: unknown): CallBrief {
 
 export async function POST(request: NextRequest) {
   let brief: CallBrief;
+  let mode: CallMode | undefined;
   try {
-    brief = validateBrief(await request.json());
+    const body = await request.json();
+    brief = validateBrief(body);
+    const m = (body as Record<string, unknown>).mode;
+    if (m === "mock" || m === "live") mode = m;
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
     notes: null,
     research: [],
     createdAt: new Date().toISOString(),
+    mode,
   };
   callStore.set(call.callId, call);
 
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
   const researchSummary = call.research.map((fact) => fact.fact).join(" | ");
 
   try {
-    const provider = getProvider();
+    const provider = getProvider(mode);
     call.conversationId = await provider.startCall(brief, researchSummary);
     call.status = "in_progress";
   } catch (err) {
