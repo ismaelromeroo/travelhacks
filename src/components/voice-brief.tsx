@@ -17,7 +17,7 @@ type Recognition = {
   start: () => void;
   stop: () => void;
   abort: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
   onend: (() => void) | null;
   onerror: (() => void) | null;
 };
@@ -101,7 +101,8 @@ export default function VoiceBrief({
 
         rec.onresult = (e) => {
           let interim = "";
-          for (let i = 0; i < e.results.length; i++) {
+          // Start at resultIndex: earlier final segments were already appended.
+          for (let i = e.resultIndex; i < e.results.length; i++) {
             const r = e.results[i];
             const text = r[0].transcript;
             if (r.isFinal) final += text;

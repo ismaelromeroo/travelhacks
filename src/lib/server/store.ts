@@ -1,5 +1,5 @@
 import { demoCalls } from "./demo-call";
-import type { Call } from "./types";
+import type { Call } from "../types";
 
 declare global {
   var __callDeskStore: Map<string, Call> | undefined;
@@ -8,9 +8,12 @@ declare global {
 export const callStore: Map<string, Call> = globalThis.__callDeskStore ?? new Map();
 globalThis.__callDeskStore = callStore;
 
-for (const call of demoCalls) {
-  if (!callStore.has(call.callId)) {
-    callStore.set(call.callId, call);
+// Demo history rides with mock mode only; live mode starts with a clean desk.
+if (process.env.CALL_MODE !== "live") {
+  for (const call of demoCalls) {
+    if (!callStore.has(call.callId)) {
+      callStore.set(call.callId, call);
+    }
   }
 }
 

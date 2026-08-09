@@ -1,4 +1,4 @@
-import type { ResearchFact } from "./types";
+import type { ResearchFact } from "../types";
 
 const TAVILY_URL = "https://api.tavily.com/search";
 const MAX_RESULTS = 5;

@@ -36,11 +36,12 @@ export const FIELD_ORDER: BriefField[] = [
 ];
 
 const OBJECTIVE_HINTS: [Objective, RegExp][] = [
-  ["request_upgrade", /\bupgrade|suite|better room\b/i],
-  ["confirm_amenity", /\bbreakfast|wifi|amenit|parking|pool|included\b/i],
-  ["negotiate_rate", /\brate|price|nightly|discount|cheaper|negotiat|euro|dollar\b/i],
+  ["request_upgrade", /\b(?:upgrade|suite|better room)\b/i],
+  ["confirm_amenity", /\b(?:breakfast|wifi|amenit\w*|parking|pool|included)\b/i],
+  ["negotiate_rate", /\b(?:rate|price|nightly|discount|cheaper|negotiat\w*|euro|dollar)\b/i],
 ];
 
+/** Maps a free-text goal onto the closest objective enum, or null if unclear. */
 export function guessObjective(text: string): Objective | null {
   return OBJECTIVE_HINTS.find(([, re]) => re.test(text))?.[0] ?? null;
 }
@@ -64,7 +65,7 @@ export function parseAnswer(field: BriefField, spoken: string): string {
   return text.replace(/^(um|uh|so|okay|ok)[,\s]+/i, "");
 }
 
-/** Answers that mean "nothing to add" rather than a value. */
+/** Answers that mean "nothing to add" rather than a value. Whole-utterance only, so "no smoking room" still counts as an answer. */
 export function isSkip(text: string): boolean {
-  return /^(no|nope|nothing|skip|that'?s it|none)\b/i.test(text.trim());
+  return /^(?:no|nope|nothing|skip|that'?s (?:it|all)|none)[.!]?$/i.test(text.trim());
 }

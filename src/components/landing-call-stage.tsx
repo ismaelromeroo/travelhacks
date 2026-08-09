@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { StatusPill, OutcomePill } from "@/components/pills";
+import type { CallStatus } from "@/lib/types";
 
 const SCRIPT = [
   { speaker: "agent", text: "Hi, I'm calling on behalf of a travel advisor about an upcoming stay. Is there any flexibility on the nightly price?" },
@@ -26,7 +28,7 @@ export default function LandingCallStage() {
 
   useEffect(() => {
     const tick = setInterval(
-      () => setStep((s) => (s > SCRIPT.length + HOLD_TICKS ? 0 : s + 1)),
+      () => setStep((s) => (s + 1) % (SCRIPT.length + 1 + HOLD_TICKS)),
       TICK_MS,
     );
     return () => clearInterval(tick);
@@ -39,7 +41,7 @@ export default function LandingCallStage() {
 
   const turns = Math.min(step, SCRIPT.length);
   const done = step > SCRIPT.length;
-  const status = step === 0 ? "queued" : done ? "completed" : "in_progress";
+  const status: CallStatus = step === 0 ? "queued" : done ? "completed" : "in_progress";
   const visible = SCRIPT.slice(0, turns);
 
   return (
@@ -52,17 +54,7 @@ export default function LandingCallStage() {
             }`}
           />
           <span className="text-[13px] font-semibold">Hotel Marceau, Paris</span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              status === "in_progress"
-                ? "bg-accent-tint text-accent"
-                : done
-                  ? "bg-success-tint text-success-ink"
-                  : "bg-[#f3f3f3] text-muted"
-            }`}
-          >
-            {status}
-          </span>
+          <StatusPill status={status} />
         </div>
         <span className="font-mono text-[11px] text-faint">{clock(turns)}</span>
       </div>
@@ -108,9 +100,7 @@ export default function LandingCallStage() {
 
         {done && (
           <div className="bubble-in flex shrink-0 items-center gap-3 rounded-[12px] border border-white/70 bg-white/80 px-4 py-3">
-            <span className="rounded-full bg-success-tint px-2.5 py-1 text-[11px] font-semibold text-success-ink">
-              success
-            </span>
+            <OutcomePill outcome="success" />
             <span className="text-[13px] text-ink-2">
               375 a night with breakfast, held until Friday
             </span>

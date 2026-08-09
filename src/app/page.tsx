@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LandingCallStage from "@/components/landing-call-stage";
+import Logo from "@/components/logo";
 
 const steps = [
   { n: "01", title: "Brief once", body: "Hotel, guest, objective, language. Thirty seconds of typing." },
@@ -12,12 +13,7 @@ export default function Landing() {
     <main className="flex flex-col">
       <section className="sky relative flex min-h-[92vh] flex-col items-center overflow-hidden px-6 pt-8 pb-24">
         <div className="flex w-full max-w-[1240px] items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-[22px] items-center justify-center rounded-full border-2 border-ink">
-              <span className="h-0.5 w-3 -rotate-45 bg-ink" />
-            </span>
-            <span className="text-[17px] font-semibold tracking-[-0.02em]">CallDesk</span>
-          </div>
+          <Logo />
           <Link
             href="/calls"
             className="rounded-full border border-white/70 bg-white/60 px-4 py-2 text-[13px] font-semibold backdrop-blur-md transition-colors hover:border-ink"

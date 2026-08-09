@@ -1,4 +1,4 @@
-import type { Call } from "./types";
+import type { Call } from "../types";
 
 const at = (base: string, seconds: number) =>
   new Date(Date.parse(base) + seconds * 1000).toISOString();

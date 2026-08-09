@@ -46,13 +46,13 @@ export default function NotesCard({
         <div className="flex flex-col gap-[22px]">
           <div className="flex flex-col gap-2">
             <div className="font-mono text-[11px] tracking-[0.04em] text-faint">SUMMARY</div>
-            <p className="text-sm leading-[1.6] text-[#2a2a2a]">{notes.summary}</p>
+            <p className="text-sm leading-[1.6] text-ink-2">{notes.summary}</p>
           </div>
           <div className="flex flex-col gap-2">
             <div className="font-mono text-[11px] tracking-[0.04em] text-faint">
               NEGOTIATED TERMS
             </div>
-            <p className="text-sm leading-[1.6] text-[#2a2a2a]">{notes.negotiatedTerms}</p>
+            <p className="text-sm leading-[1.6] text-ink-2">{notes.negotiatedTerms}</p>
           </div>
         </div>
 
@@ -61,7 +61,7 @@ export default function NotesCard({
           {notes.keyQuotes.map((q, i) => (
             <blockquote
               key={i}
-              className="rounded-r-[8px] border-l-2 border-accent bg-[#fafafa] px-3.5 py-3 text-sm leading-[1.55] text-[#2a2a2a]"
+              className="rounded-r-[8px] border-l-2 border-accent bg-surface px-3.5 py-3 text-sm leading-[1.55] text-ink-2"
             >
               “{q}”
             </blockquote>
@@ -101,7 +101,7 @@ export default function NotesCard({
             {transcript.map((line, i) => (
               <div key={i} className="grid grid-cols-[70px_1fr] gap-3 text-sm leading-[1.55]">
                 <span className="font-mono text-[11px] text-faint">{line.speaker}</span>
-                <span className="text-[#2a2a2a]">{line.text}</span>
+                <span className="text-ink-2">{line.text}</span>
               </div>
             ))}
           </div>

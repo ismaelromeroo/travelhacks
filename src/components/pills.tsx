@@ -15,10 +15,12 @@ const OUTCOME: Record<CallOutcome, string> = {
   declined: "bg-danger-tint text-danger",
 };
 
+/** Colored badge for a call's lifecycle status. */
 export function StatusPill({ status }: { status: CallStatus }) {
   return <span className={`${pill} ${STATUS[status]}`}>{status}</span>;
 }
 
+/** Colored badge for a completed call's outcome. */
 export function OutcomePill({ outcome }: { outcome: CallOutcome }) {
   return <span className={`${pill} ${OUTCOME[outcome]}`}>{outcome}</span>;
 }

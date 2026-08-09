@@ -1,5 +1,9 @@
-export type Objective = "negotiate_rate" | "confirm_amenity" | "request_upgrade";
-export type Language = "en" | "es";
+/** Single source for the enum values — UI labels and API validation both derive from these. */
+export const OBJECTIVE_VALUES = ["negotiate_rate", "confirm_amenity", "request_upgrade"] as const;
+export const LANGUAGE_VALUES = ["en", "es"] as const;
+
+export type Objective = (typeof OBJECTIVE_VALUES)[number];
+export type Language = (typeof LANGUAGE_VALUES)[number];
 export type CallStatus = "queued" | "in_progress" | "completed" | "failed";
 export type CallOutcome = "success" | "partial" | "declined";
 export type Speaker = "agent" | "hotel";
@@ -94,11 +98,6 @@ export const OBJECTIVES: Record<Objective, string> = {
   negotiate_rate: "Rate negotiation",
   confirm_amenity: "Confirm amenity",
   request_upgrade: "Request upgrade",
-};
-
-export const LANGUAGES: Record<Language, string> = {
-  en: "en-GB",
-  es: "es-ES",
 };
 
 /**

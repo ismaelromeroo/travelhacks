@@ -3,7 +3,7 @@ import type {
   ConversationState,
   ProviderTranscriptTurn,
   Speaker,
-} from "../types";
+} from "../../types";
 
 const BASE_URL = "https://api.vapi.ai";
 
@@ -12,6 +12,7 @@ const FAILURE_ENDED_REASON_TOKENS = [
   "error",
   "failed",
   "busy",
+  "did-not-answer",
   "no-answer",
   "unanswered",
   "voicemail",
@@ -42,6 +43,7 @@ interface CreateCallResponse {
   id: string;
 }
 
+/** Places the outbound call via Vapi, injecting the brief as prompt variables. */
 export const startCall: CallProvider["startCall"] = async (brief, researchSummary) => {
   const assistantId = requireEnv("VAPI_ASSISTANT_ID");
   const phoneNumberId = requireEnv("VAPI_PHONE_NUMBER_ID");
@@ -117,6 +119,7 @@ function mapStatus(data: GetCallResponse): ConversationState["status"] {
   return isFailure ? "failed" : "done";
 }
 
+/** Polls a Vapi call's status and transcript, mapped into provider-neutral shapes. */
 export const getConversation: CallProvider["getConversation"] = async (conversationId) => {
   const res = await vapiFetch(`/call/${conversationId}`);
   const data = (await res.json()) as GetCallResponse;

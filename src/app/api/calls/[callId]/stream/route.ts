@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { getProvider, mapConversationStatus } from "@/lib/providers";
-import { generateNotes } from "@/lib/notes";
-import { callStore } from "@/lib/store";
+import { getProvider, mapConversationStatus } from "@/lib/server/providers";
+import { generateNotes } from "@/lib/server/notes";
+import { callStore } from "@/lib/server/store";
 import type { CallStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";

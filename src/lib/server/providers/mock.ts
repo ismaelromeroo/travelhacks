@@ -6,7 +6,7 @@ import type {
   Language,
   Objective,
   ProviderTranscriptTurn,
-} from "../types";
+} from "../../types";
 
 interface ScriptLine extends ProviderTranscriptTurn {
   atSeconds: number;

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StatusPill } from "@/components/pills";
 import {
-  LANGUAGES,
   OBJECTIVES,
+  SPOKEN_LANGUAGES,
   type Call,
   type CallStatus,
   type CallNotes,
@@ -105,7 +105,9 @@ export default function LiveCall({ callId }: { callId: string }) {
             <p className="text-[15px] text-muted">
               {OBJECTIVES[brief.objective]} · {brief.guestName} ·{" "}
               <span className="font-mono text-[13px]">{brief.bookingRef}</span> ·{" "}
-              <span className="font-mono text-[13px]">{LANGUAGES[brief.language]}</span>
+              <span className="font-mono text-[13px]">
+                {SPOKEN_LANGUAGES.find((l) => l.id === brief.language)?.code ?? brief.language}
+              </span>
             </p>
           )}
         </div>
