@@ -1,9 +1,9 @@
 import type { CallProvider, CallStatus, ProviderConversationStatus } from "../types";
-import * as elevenLabsProvider from "./elevenlabs";
+import * as vapiProvider from "./vapi";
 import * as mockProvider from "./mock";
 
 export function getProvider(): CallProvider {
-  return process.env.CALL_MODE === "live" ? elevenLabsProvider : mockProvider;
+  return process.env.CALL_MODE === "live" ? vapiProvider : mockProvider;
 }
 
 /** Collapses a provider's conversation status into this app's simpler call lifecycle. */

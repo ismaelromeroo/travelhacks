@@ -1,26 +1,28 @@
 import type { Call, CallNotes } from "./types";
 
 const NOTES_SCHEMA = {
-  type: "OBJECT",
+  type: "object",
   properties: {
-    outcome: { type: "STRING", enum: ["success", "partial", "declined"] },
-    summary: { type: "STRING" },
-    negotiatedTerms: { type: "STRING" },
-    keyQuotes: { type: "ARRAY", items: { type: "STRING" } },
+    outcome: { type: "string", enum: ["success", "partial", "declined"] },
+    summary: { type: "string" },
+    negotiatedTerms: { type: "string" },
+    keyQuotes: { type: "array", items: { type: "string" } },
     discrepancies: {
-      type: "ARRAY",
+      type: "array",
       items: {
-        type: "OBJECT",
+        type: "object",
         properties: {
-          topic: { type: "STRING" },
-          claimed: { type: "STRING" },
-          confirmed: { type: "STRING" },
+          topic: { type: "string" },
+          claimed: { type: "string" },
+          confirmed: { type: "string" },
         },
         required: ["topic", "claimed", "confirmed"],
+        additionalProperties: false,
       },
     },
   },
   required: ["outcome", "summary", "negotiatedTerms", "keyQuotes", "discrepancies"],
+  additionalProperties: false,
 } as const;
 
 function fallbackNotes(call: Call): CallNotes {
@@ -33,17 +35,17 @@ function fallbackNotes(call: Call): CallNotes {
   };
 }
 
-interface GenerateContentResponse {
-  candidates?: { content?: { parts?: { text?: string }[] } }[];
+interface ChatCompletionResponse {
+  choices?: { message?: { content?: string } }[];
 }
 
 export async function generateNotes(call: Call): Promise<CallNotes> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return fallbackNotes(call);
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
+  const model = process.env.OPENAI_MODEL ?? "gpt-5.4-mini";
   const transcriptText = call.transcript
     .map((turn) => `${turn.speaker.toUpperCase()}: ${turn.text}`)
     .join("\n");
@@ -67,30 +69,28 @@ Produce structured notes for the advisor. Set "outcome" based on whether the obj
 Populate "discrepancies" ONLY where something confirmed on the call contradicts a specific pre-call research fact (e.g. website claims breakfast included, front desk says it costs extra). Leave it empty if there's no contradiction or no research.`;
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "call_notes", schema: NOTES_SCHEMA, strict: true },
         },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: NOTES_SCHEMA,
-          },
-        }),
-      }
-    );
+      }),
+    });
 
     if (!res.ok) {
       return fallbackNotes(call);
     }
 
-    const data = (await res.json()) as GenerateContentResponse;
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = (await res.json()) as ChatCompletionResponse;
+    const text = data.choices?.[0]?.message?.content;
     if (!text) {
       return fallbackNotes(call);
     }
