@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AGENT_LOOKUP, OBJECTIVES, SPOKEN_LANGUAGES, type Objective } from "@/lib/types";
+import {
+  AGENT_LOOKUP,
+  OBJECTIVES,
+  SPEECH_FALLBACK_CODE,
+  SPOKEN_LANGUAGES,
+  type Objective,
+} from "@/lib/types";
+import { guessObjective, type BriefField } from "@/lib/voice-brief";
+import VoiceBrief from "@/components/voice-brief";
 
 const inputClass =
   "w-full rounded-[10px] border border-border-input bg-white/70 px-3.5 py-2.5 text-[15px] outline-none transition-shadow focus:border-accent focus:shadow-[0_0_0_3px_rgba(27,110,243,0.14)]";
@@ -11,7 +19,7 @@ const labelClass = "text-[13px] font-semibold text-ink-2";
 const sectionClass = "glass flex flex-col gap-[18px] rounded-[14px] p-6";
 const stepClass = "font-mono text-[11px] tracking-[0.06em] text-faint";
 
-/** Type it, or hand it to the agent — auto submits AGENT_LOOKUP text, not a blank. */
+/** Type it, or hand it to the agent. Auto submits AGENT_LOOKUP text, not a blank. */
 function AutoField({
   id,
   label,
@@ -21,6 +29,7 @@ function AutoField({
   onChange,
   auto,
   onToggle,
+  flash = "",
 }: {
   id: string;
   label: string;
@@ -30,6 +39,7 @@ function AutoField({
   onChange: (v: string) => void;
   auto: boolean;
   onToggle: () => void;
+  flash?: string;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -60,7 +70,7 @@ function AutoField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required
-          className={`${inputClass} font-mono text-sm`}
+          className={`${inputClass} font-mono text-sm${flash}`}
         />
       )}
     </div>
@@ -69,7 +79,7 @@ function AutoField({
 
 export default function NewCall() {
   const router = useRouter();
-  const [hotelName, setHotelName] = useState("Hotel Marceau, Paris");
+  const [hotelName, setHotelName] = useState("");
   const [guestName, setGuestName] = useState("");
   const [hotelPhone, setHotelPhone] = useState("");
   const [bookingRef, setBookingRef] = useState("");
@@ -82,7 +92,30 @@ export default function NewCall() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [flash, setFlash] = useState<BriefField | null>(null);
+
   const lang = SPOKEN_LANGUAGES.find((l) => l.id === langId) ?? SPOKEN_LANGUAGES[0];
+
+  const SETTERS: Record<BriefField, (v: string) => void> = {
+    hotelName: setHotelName,
+    guestName: setGuestName,
+    hotelPhone: setHotelPhone,
+    bookingRef: setBookingRef,
+    context: setContext,
+    objectiveText: (v) => {
+      setObjectiveText(v);
+      const guessed = guessObjective(v);
+      if (guessed) setObjective(guessed);
+    },
+  };
+
+  function onVoiceFill(field: BriefField, value: string) {
+    SETTERS[field](value);
+    setFlash(field);
+    setTimeout(() => setFlash((f) => (f === field ? null : f)), 1600);
+  }
+
+  const flashClass = (field: BriefField) => (flash === field ? " just-filled" : "");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -133,6 +166,12 @@ export default function NewCall() {
           </p>
         </div>
 
+        <VoiceBrief
+          values={{ hotelName, guestName, hotelPhone, bookingRef, objectiveText, context }}
+          langCode={lang.code === "auto" ? SPEECH_FALLBACK_CODE : lang.code}
+          onFill={onVoiceFill}
+        />
+
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
           <section className={sectionClass}>
             <div className={stepClass}>01 · HOTEL</div>
@@ -144,8 +183,9 @@ export default function NewCall() {
                 id="hotelName"
                 value={hotelName}
                 onChange={(e) => setHotelName(e.target.value)}
+                placeholder="Hotel Marceau, Paris"
                 required
-                className={inputClass}
+                className={inputClass + flashClass("hotelName")}
               />
             </div>
             <AutoField
@@ -157,6 +197,7 @@ export default function NewCall() {
               onChange={setHotelPhone}
               auto={autoPhone}
               onToggle={() => setAutoPhone((v) => !v)}
+              flash={flashClass("hotelPhone")}
             />
           </section>
 
@@ -172,7 +213,7 @@ export default function NewCall() {
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="Elena Ruiz"
                 required
-                className={inputClass}
+                className={inputClass + flashClass("guestName")}
               />
             </div>
             <AutoField
@@ -184,6 +225,7 @@ export default function NewCall() {
               onChange={setBookingRef}
               auto={autoRef}
               onToggle={() => setAutoRef((v) => !v)}
+              flash={flashClass("bookingRef")}
             />
           </section>
 
@@ -198,7 +240,7 @@ export default function NewCall() {
                 value={objectiveText}
                 onChange={(e) => setObjectiveText(e.target.value)}
                 placeholder="Negotiate the nightly rate down to €360"
-                className={inputClass}
+                className={inputClass + flashClass("objectiveText")}
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {Object.entries(OBJECTIVES).map(([value, label]) => {
@@ -234,7 +276,7 @@ export default function NewCall() {
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 placeholder="Two guests, arriving Sept 12, flexible on room type. Target €360/night."
-                className={`${inputClass} resize-y text-sm leading-[1.5]`}
+                className={`${inputClass}${flashClass("context")} resize-y text-sm leading-[1.5]`}
               />
             </div>
           </section>
@@ -263,7 +305,9 @@ export default function NewCall() {
                       style={{ background: active ? l.hue : "#dcdcdc" }}
                     />
                     {l.label}
-                    <span className="font-mono text-[11px] opacity-60">{l.code}</span>
+                    {l.id !== "auto" && (
+                      <span className="font-mono text-[11px] opacity-60">{l.code}</span>
+                    )}
                   </button>
                 );
               })}

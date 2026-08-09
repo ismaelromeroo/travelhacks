@@ -23,13 +23,35 @@ export async function GET(
   if (!call) {
     return new Response("Call not found", { status: 404 });
   }
+
+  const encoder = new TextEncoder();
+  const sseHeaders = {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+  };
+
+  // Seeded / already-finished calls: client already hydrated from GET — just close the stream.
+  if (call.status === "completed" || call.status === "failed") {
+    const snapshot = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseEvent("status", { status: call.status })));
+        if (call.notes) {
+          controller.enqueue(encoder.encode(sseEvent("notes", call.notes)));
+        }
+        controller.enqueue(encoder.encode(sseEvent("done", {})));
+        controller.close();
+      },
+    });
+    return new Response(snapshot, { headers: sseHeaders });
+  }
+
   if (!call.conversationId) {
     return new Response("Call has no active conversation", { status: 409 });
   }
 
   const provider = getProvider();
   const conversationId = call.conversationId;
-  const encoder = new TextEncoder();
   const startedAt = Date.now();
   const { signal } = request;
 
@@ -97,11 +119,5 @@ export async function GET(
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
+  return new Response(stream, { headers: sseHeaders });
 }
