@@ -4,63 +4,98 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { StatusPill } from "@/components/pills";
 import {
-  LANGUAGES,
   OBJECTIVES,
+  SPOKEN_LANGUAGES,
   type Call,
+  type CallBrief,
   type CallStatus,
   type CallNotes,
+  type ResearchFact,
   type TranscriptTurn,
 } from "@/lib/types";
 import NotesCard from "./notes-card";
 
+/** Stream turns carry the store index so replays after a reconnect dedupe cleanly. */
+type StreamTurn = TranscriptTurn & { index?: number };
+
 export default function LiveCall({ callId }: { callId: string }) {
-  const [call, setCall] = useState<Call | null>(null);
+  const [brief, setBrief] = useState<CallBrief | null>(null);
+  const [research, setResearch] = useState<ResearchFact[]>([]);
   const [status, setStatus] = useState<CallStatus>("queued");
   const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
   const [notes, setNotes] = useState<CallNotes | null>(null);
+  const [missing, setMissing] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
 
-  // Initial state: brief, research, and anything that streamed before we subscribed.
+  // Hydrate from the snapshot, then subscribe to the stream only while the call
+  // is still running — finished calls already delivered everything in the GET.
   useEffect(() => {
+    let es: EventSource | null = null;
+    let cancelled = false;
+
     fetch(`/api/calls/${callId}`)
-      .then((r) => r.json())
-      .then((data: Call) => {
-        setCall(data);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Call not found (${r.status})`);
+        return r.json() as Promise<Call>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setBrief(data.brief);
+        setResearch(data.research ?? []);
         setStatus(data.status);
         setTranscript(data.transcript ?? []);
         setNotes(data.notes ?? null);
+        if (data.status === "completed" || data.status === "failed") return;
+
+        es = new EventSource(`/api/calls/${callId}/stream`);
+        es.addEventListener("status", (e) => {
+          setStatus(JSON.parse((e as MessageEvent).data).status);
+        });
+        es.addEventListener("transcript", (e) => {
+          const turn = JSON.parse((e as MessageEvent).data) as StreamTurn;
+          setTranscript((t) =>
+            turn.index !== undefined && turn.index < t.length
+              ? t
+              : [...t, { speaker: turn.speaker, text: turn.text, timestamp: turn.timestamp }]
+          );
+        });
+        es.addEventListener("notes", (e) => {
+          setNotes(JSON.parse((e as MessageEvent).data));
+        });
+        // No reconnect logic on error — the browser retries EventSource itself.
+        es.addEventListener("done", () => es?.close());
       })
-      .catch(() => {});
-  }, [callId]);
+      .catch(() => {
+        if (!cancelled) setMissing(true);
+      });
 
-  useEffect(() => {
-    const es = new EventSource(`/api/calls/${callId}/stream`);
-
-    es.addEventListener("status", (e) => {
-      setStatus(JSON.parse((e as MessageEvent).data).status);
-    });
-
-    es.addEventListener("transcript", (e) => {
-      setTranscript((t) => [...t, JSON.parse((e as MessageEvent).data) as TranscriptTurn]);
-    });
-
-    es.addEventListener("notes", (e) => {
-      setNotes(JSON.parse((e as MessageEvent).data));
-    });
-
-    // ponytail: no reconnect logic on error — the browser retries EventSource itself.
-    es.addEventListener("done", () => es.close());
-
-    return () => es.close();
+    return () => {
+      cancelled = true;
+      es?.close();
+    };
   }, [callId]);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [transcript.length]);
 
+  if (missing) {
+    return (
+      <main className="flex flex-col items-center gap-4 pt-24 text-center">
+        <h1 className="text-[28px] font-semibold tracking-[-0.02em]">Call not found</h1>
+        <p className="max-w-[42ch] text-[15px] leading-[1.55] text-muted">
+          This call isn&apos;t in the current session — the desk keeps history in memory only.
+        </p>
+        <Link href="/calls" className="text-[13px] font-semibold text-accent">
+          ‹ Back to calls
+        </Link>
+      </main>
+    );
+  }
+
   const live = status === "in_progress";
-  const brief = call?.brief;
-  const research = call?.research ?? [];
+  const languageCode =
+    SPOKEN_LANGUAGES.find((l) => l.id === brief?.language)?.code ?? brief?.language;
 
   return (
     <main className="flex flex-col gap-8 pt-6">
@@ -76,7 +111,7 @@ export default function LiveCall({ callId }: { callId: string }) {
             <p className="text-[15px] text-muted">
               {OBJECTIVES[brief.objective]} · {brief.guestName} ·{" "}
               <span className="font-mono text-[13px]">{brief.bookingRef}</span> ·{" "}
-              <span className="font-mono text-[13px]">{LANGUAGES[brief.language]}</span>
+              <span className="font-mono text-[13px]">{languageCode}</span>
             </p>
           )}
         </div>

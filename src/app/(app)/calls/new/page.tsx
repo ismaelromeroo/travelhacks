@@ -11,6 +11,7 @@ import {
   type Objective,
 } from "@/lib/types";
 import { guessObjective, type BriefField } from "@/lib/voice-brief";
+import { cn } from "@/lib/utils";
 import VoiceBrief from "@/components/voice-brief";
 
 const inputClass =
@@ -70,7 +71,7 @@ function AutoField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required
-          className={`${inputClass} font-mono text-sm${flash}`}
+          className={cn(inputClass, "font-mono text-sm", flash)}
         />
       )}
     </div>
@@ -96,7 +97,8 @@ export default function NewCall() {
 
   const lang = SPOKEN_LANGUAGES.find((l) => l.id === langId) ?? SPOKEN_LANGUAGES[0];
 
-  const SETTERS: Record<BriefField, (v: string) => void> = {
+  // One path for typed and spoken objective text, so both auto-pick the enum chip.
+  const setters: Record<BriefField, (v: string) => void> = {
     hotelName: setHotelName,
     guestName: setGuestName,
     hotelPhone: setHotelPhone,
@@ -110,12 +112,12 @@ export default function NewCall() {
   };
 
   function onVoiceFill(field: BriefField, value: string) {
-    SETTERS[field](value);
+    setters[field](value);
     setFlash(field);
     setTimeout(() => setFlash((f) => (f === field ? null : f)), 1600);
   }
 
-  const flashClass = (field: BriefField) => (flash === field ? " just-filled" : "");
+  const flashClass = (field: BriefField) => (flash === field ? "just-filled" : "");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -185,7 +187,7 @@ export default function NewCall() {
                 onChange={(e) => setHotelName(e.target.value)}
                 placeholder="Hotel Marceau, Paris"
                 required
-                className={inputClass + flashClass("hotelName")}
+                className={cn(inputClass, flashClass("hotelName"))}
               />
             </div>
             <AutoField
@@ -213,7 +215,7 @@ export default function NewCall() {
                 onChange={(e) => setGuestName(e.target.value)}
                 placeholder="Elena Ruiz"
                 required
-                className={inputClass + flashClass("guestName")}
+                className={cn(inputClass, flashClass("guestName"))}
               />
             </div>
             <AutoField
@@ -238,9 +240,9 @@ export default function NewCall() {
               <input
                 id="objective"
                 value={objectiveText}
-                onChange={(e) => setObjectiveText(e.target.value)}
+                onChange={(e) => setters.objectiveText(e.target.value)}
                 placeholder="Negotiate the nightly rate down to €360"
-                className={inputClass + flashClass("objectiveText")}
+                className={cn(inputClass, flashClass("objectiveText"))}
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {Object.entries(OBJECTIVES).map(([value, label]) => {
@@ -276,7 +278,7 @@ export default function NewCall() {
                 value={context}
                 onChange={(e) => setContext(e.target.value)}
                 placeholder="Two guests, arriving Sept 12, flexible on room type. Target €360/night."
-                className={`${inputClass}${flashClass("context")} resize-y text-sm leading-[1.5]`}
+                className={cn(inputClass, flashClass("context"), "resize-y text-sm leading-[1.5]")}
               />
             </div>
           </section>

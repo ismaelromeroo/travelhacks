@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { callStore, toPublicCall } from "@/lib/store";
+import { callStore, toPublicCall } from "@/lib/server/store";
 
 export async function GET(
   _request: Request,

@@ -1,4 +1,4 @@
-import type { Call, CallNotes } from "./types";
+import type { Call, CallNotes } from "../types";
 
 const NOTES_SCHEMA = {
   type: "object",

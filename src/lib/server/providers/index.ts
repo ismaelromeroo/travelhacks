@@ -1,4 +1,4 @@
-import type { CallProvider, CallStatus, ProviderConversationStatus } from "../types";
+import type { CallProvider, CallStatus, ProviderConversationStatus } from "../../types";
 import * as vapiProvider from "./vapi";
 import * as mockProvider from "./mock";
 

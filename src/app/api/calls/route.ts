@@ -1,12 +1,20 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getProvider } from "@/lib/providers";
-import { gatherResearch } from "@/lib/research";
-import { callStore } from "@/lib/store";
-import type { Call, CallBrief, CallSummary, Language, Objective } from "@/lib/types";
+import { getProvider } from "@/lib/server/providers";
+import { gatherResearch } from "@/lib/server/research";
+import { callStore } from "@/lib/server/store";
+import {
+  LANGUAGE_VALUES,
+  OBJECTIVE_VALUES,
+  type Call,
+  type CallBrief,
+  type CallSummary,
+  type Language,
+  type Objective,
+} from "@/lib/types";
 
-const OBJECTIVES = new Set<Objective>(["negotiate_rate", "confirm_amenity", "request_upgrade"]);
-const LANGUAGES = new Set<Language>(["en", "es"]);
+const OBJECTIVES = new Set<Objective>(OBJECTIVE_VALUES);
+const LANGUAGES = new Set<Language>(LANGUAGE_VALUES);
 const REQUIRED_STRING_FIELDS = ["hotelName", "hotelPhone", "guestName", "bookingRef", "objective", "language"] as const;
 
 function validateBrief(body: unknown): CallBrief {
