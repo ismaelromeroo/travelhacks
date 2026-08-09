@@ -66,7 +66,7 @@ export default function LiveCall({ callId }: { callId: string }) {
     <main className="flex flex-col gap-8 pt-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <Link href="/" className="w-fit text-[13px] font-semibold text-accent">
+          <Link href="/calls" className="w-fit text-[13px] font-semibold text-accent">
             ‹ Back to calls
           </Link>
           <h1 className="text-[34px] font-semibold leading-[1.15] tracking-[-0.03em]">

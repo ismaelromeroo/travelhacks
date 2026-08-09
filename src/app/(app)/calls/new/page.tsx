@@ -124,7 +124,7 @@ export default function NewCall() {
 
       <main className="mx-auto flex w-full max-w-[640px] flex-col gap-6 pt-4 pb-40">
         <div className="flex flex-col gap-2">
-          <Link href="/" className="w-fit text-[13px] font-semibold text-accent">
+          <Link href="/calls" className="w-fit text-[13px] font-semibold text-accent">
             ‹ Back to calls
           </Link>
           <h1 className="text-[34px] font-semibold leading-[1.15] tracking-[-0.03em]">Call brief</h1>
